@@ -1,38 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { getStats, resetStats } from '../utils/analytics';
+import { fetchStatsFromDb } from '../utils/analytics';
 import { StatsMap, StatData } from '../types';
 import { MODELS } from '../constants';
 
 const AdminPanel: React.FC = () => {
   const [stats, setStats] = useState<StatsMap>({});
+  const [loading, setLoading] = useState(true);
 
-  const loadData = () => {
-    setStats(getStats());
+  const loadData = async () => {
+    try {
+      const dbStats = await fetchStatsFromDb();
+      setStats(dbStats);
+    } catch (error) {
+      console.error("Erro ao carregar dados", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadData();
-    // Atualiza a cada 5 segundos para ver mudanças em tempo real se tiver abas abertas
-    const interval = setInterval(loadData, 5000);
+    // Atualiza a cada 10 segundos
+    const interval = setInterval(loadData, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleReset = () => {
-    if (window.confirm('Tem certeza que deseja zerar todas as estatísticas?')) {
-      resetStats();
-      loadData();
-    }
-  };
-
   const calculateCTR = (clicks: number, views: number) => {
-    if (views === 0) return '0%';
+    if (!views || views === 0) return '0%';
     return ((clicks / views) * 100).toFixed(1) + '%';
   };
 
+  // Prepara dados combinando configuração local com dados do banco
+  const getDisplayData = (key: string) => {
+    return stats[key] || { views: 0, clicks: 0 };
+  };
+
   // Calcula totais
-  const statsValues = Object.values(stats) as StatData[];
-  const totalViews = statsValues.reduce((acc, curr) => acc + curr.views, 0);
-  const totalClicks = statsValues.reduce((acc, curr) => acc + curr.clicks, 0);
+  const totalViews = Object.values(stats).reduce((acc, curr) => acc + curr.views, 0);
+  const totalClicks = Object.values(stats).reduce((acc, curr) => acc + curr.clicks, 0);
   const totalCTR = calculateCTR(totalClicks, totalViews);
 
   return (
@@ -50,22 +55,24 @@ const AdminPanel: React.FC = () => {
               ← Voltar para o site
             </button>
           </div>
-          <button 
-            onClick={handleReset}
-            className="text-xs font-bold text-red-500 border border-red-500/30 px-3 py-2 rounded hover:bg-red-500/10 transition-colors"
-          >
-            ZERAR ESTATÍSTICAS
-          </button>
+          <div className="flex items-center gap-2">
+            {loading && <span className="text-xs text-gray-500 animate-pulse">Atualizando...</span>}
+            <button 
+              onClick={() => loadData()}
+              className="text-xs font-bold text-white border border-white/30 px-3 py-2 rounded hover:bg-white/10 transition-colors"
+            >
+              🔄 ATUALIZAR
+            </button>
+          </div>
         </div>
 
-        {/* Aviso sobre LocalStorage */}
-        <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl mb-8 text-sm text-yellow-200">
+        {/* Status Conexão */}
+        <div className="bg-green-500/10 border border-green-500/20 p-4 rounded-xl mb-8 text-sm text-green-200">
           <p className="font-bold flex items-center gap-2">
-            ⚠️ Modo Demonstração (Sem Banco de Dados)
+            ⚡ Conectado ao Supabase
           </p>
           <p className="mt-1 opacity-80">
-            Este painel mostra apenas os dados salvos no <strong>cache deste navegador</strong>. 
-            Como o site não possui um banco de dados online, você não verá os acessos de outros usuários, apenas os seus próprios testes.
+            Os dados agora estão salvos na nuvem. Você pode ver os mesmos números de qualquer dispositivo.
           </p>
         </div>
 
@@ -99,7 +106,7 @@ const AdminPanel: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-borda-card">
                 {Object.keys(MODELS).map((key) => {
-                  const data = stats[key] || { views: 0, clicks: 0 };
+                  const data = getDisplayData(key);
                   return (
                     <tr key={key} className="hover:bg-white/5 transition-colors">
                       <td className="p-4">
@@ -123,10 +130,6 @@ const AdminPanel: React.FC = () => {
               Nenhum modelo configurado em constants.ts
             </div>
           )}
-        </div>
-
-        <div className="mt-6 text-center text-xs text-gray-600">
-          <p>Os dados são salvos localmente no navegador. Limpar o cache apagará esses dados.</p>
         </div>
       </div>
     </div>
