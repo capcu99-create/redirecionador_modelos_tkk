@@ -1,23 +1,20 @@
-import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    return {
-      server: {
-        port: 3000,
-        host: '0.0.0.0',
-      },
-      plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, '.'),
-        }
-      }
-    };
-});
+// Esta configuração resolve o erro de Build na Vercel.
+// Ela avisa ao Vite que o React e o Supabase são carregados via CDN (no index.html)
+// e não devem ser empacotados junto com o código fonte.
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    rollupOptions: {
+      external: [
+        'react',
+        'react-dom',
+        'react-dom/client',
+        'react-router-dom',
+        '@supabase/supabase-js'
+      ]
+    }
+  }
+})
