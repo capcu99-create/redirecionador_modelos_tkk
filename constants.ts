@@ -4,7 +4,8 @@ import { ModelMap, Translations } from './types';
 // The key (left side) is what you type in the URL (e.g., /mariana)
 // The value (right side) is the Telegram link
 export const MODELS: ModelMap = {
-  anaaclara: "https://t.me/annaclaravipzinho_bot"
+  priscila: "https://t.me/teste1",
+  leticia : "https://t.me/teste2"
 };
 
 // SLUG SECRETO DO ADMIN
