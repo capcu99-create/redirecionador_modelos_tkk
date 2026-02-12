@@ -1,15 +1,10 @@
 import { ModelMap, Translations } from './types';
 
-// CONFIGURATION: Add your models here
-// The key (left side) is what you type in the URL (e.g., /mariana)
-// The value (right side) is the Telegram link
 export const MODELS: ModelMap = {
   priscila: "https://t.me/teste1",
   leticia : "https://t.me/teste2"
 };
 
-// SLUG SECRETO DO ADMIN
-// Acesse usando: seudominio.com/#/paineladmin
 export const ADMIN_ROUTE = "/paineladmin";
 
 export const DEFAULT_GIF = "https://i.imgur.com/w55irUi.gif";
