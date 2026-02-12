@@ -1,57 +1,61 @@
-import { MODELS } from '../constants';
+import { supabase } from '../supabaseClient';
 import { StatsMap } from '../types';
 
-const STORAGE_KEY = 'bridge_app_analytics';
+// Função para buscar estatísticas do banco
+export const fetchStatsFromDb = async (): Promise<StatsMap> => {
+  const { data, error } = await supabase
+    .from('model_stats')
+    .select('slug, views, clicks');
 
-// Recupera as estatísticas atuais
-export const getStats = (): StatsMap => {
-  if (typeof localStorage === 'undefined') return {};
+  if (error) {
+    console.error('Erro ao buscar stats:', error);
+    return {};
+  }
+
+  const statsMap: StatsMap = {};
   
-  const stored = localStorage.getItem(STORAGE_KEY);
-  const data: StatsMap = stored ? JSON.parse(stored) : {};
+  if (data) {
+    data.forEach((row: any) => {
+      statsMap[row.slug] = {
+        views: row.views,
+        clicks: row.clicks
+      };
+    });
+  }
+
+  return statsMap;
+};
+
+// Registra uma visualização de página usando RPC (Atomic Increment)
+export const trackView = async (modelId: string) => {
+  const normalizedId = modelId.toLowerCase();
   
-  // Garante que todos os modelos configurados existam no objeto, mesmo que zerados
-  Object.keys(MODELS).forEach(key => {
-    if (!data[key]) {
-      data[key] = { views: 0, clicks: 0 };
-    }
+  // Chama a função SQL 'increment_view' que criamos no banco
+  const { error } = await supabase.rpc('increment_view', { 
+    row_slug: normalizedId 
   });
-  
-  return data;
-};
 
-// Registra uma visualização de página
-export const trackView = (modelId: string) => {
-  if (typeof localStorage === 'undefined') return;
-  
-  const normalizedId = modelId.toLowerCase();
-  const stats = getStats();
-  
-  if (!stats[normalizedId]) {
-    stats[normalizedId] = { views: 0, clicks: 0 };
+  if (error) {
+    console.error('Erro ao registrar view:', error);
   }
-  
-  stats[normalizedId].views += 1;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
 };
 
-// Registra um clique no botão de acesso
-export const trackClick = (modelId: string) => {
-  if (typeof localStorage === 'undefined') return;
-
+// Registra um clique usando RPC (Atomic Increment)
+export const trackClick = async (modelId: string) => {
   const normalizedId = modelId.toLowerCase();
-  const stats = getStats();
-  
-  if (!stats[normalizedId]) {
-    stats[normalizedId] = { views: 0, clicks: 0 };
+
+  // Chama a função SQL 'increment_click' que criamos no banco
+  const { error } = await supabase.rpc('increment_click', { 
+    row_slug: normalizedId 
+  });
+
+  if (error) {
+    console.error('Erro ao registrar click:', error);
   }
-  
-  stats[normalizedId].clicks += 1;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stats));
 };
 
-// Reinicia as estatísticas
-export const resetStats = () => {
-  if (typeof localStorage === 'undefined') return;
-  localStorage.removeItem(STORAGE_KEY);
+// Reset agora precisa de permissão ou ser feito via tabela, 
+// por segurança vamos apenas logar, pois deletar dados do banco via front é perigoso sem auth
+export const resetStats = async () => {
+  console.warn("Reset de estatísticas via frontend desabilitado por segurança com banco de dados.");
 };
