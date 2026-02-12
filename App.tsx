@@ -36,7 +36,10 @@ const App: React.FC = () => {
       (currentPath === '/' || currentPath === '' || !isValidModel)
     ) {
       if (defaultModel) {
-        window.location.hash = '/' + defaultModel;
+        // Pequeno delay para garantir que o redirecionamento aconteça suavemente
+        setTimeout(() => {
+           window.location.hash = '/' + defaultModel;
+        }, 100);
       }
     }
   }, [currentPath, modelId]);
@@ -44,7 +47,12 @@ const App: React.FC = () => {
   // Enquanto redireciona ou se não houver modelos configurados
   const isValidModel = Object.keys(MODELS).includes(modelId);
   if ((currentPath === '/' || currentPath === '' || !isValidModel) && currentPath !== ADMIN_ROUTE) {
-    return null; 
+    // Exibe um loading em vez de retornar null (tela preta)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <div className="w-10 h-10 border-4 border-roxo border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   // Rota Admin
