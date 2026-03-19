@@ -25,10 +25,10 @@ export type ModelMap = Record<string, ModelLinks>;
 export interface StatData {
   views: number;
   clicks: number;
-  pt_views: number;
-  pt_clicks: number;
-  default_views: number;
-  default_clicks: number;
+  pt_views?: number;
+  pt_clicks?: number;
+  default_views?: number;
+  default_clicks?: number;
 }
 
 export type StatsMap = Record<string, StatData>;
