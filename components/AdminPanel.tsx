@@ -278,7 +278,83 @@ const AdminPanel: React.FC = () => {
             <div className="p-8 text-center text-gray-500">
               Nenhum modelo configurado em constants.ts
             </div>
+          )}
+        </div>
 
+        {/* Instruções SQL */}
+        <div className="bg-[#1a1a1a] border border-[#333] p-6 rounded-xl">
+          <h2 className="text-lg font-bold text-white mb-4">Instruções para o Supabase (MUITO IMPORTANTE)</h2>
+          <p className="text-gray-400 mb-4 text-sm">
+            Para que o filtro de tempo (hoje, semana, mês) e a separação por idioma funcionem, você precisa criar uma nova tabela no seu banco de dados Supabase. 
+            Acesse o <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="text-roxo underline">Dashboard do Supabase</a>, vá em <strong>SQL Editor</strong> e rode o seguinte comando. Ele vai criar a tabela nova e manter as funções antigas funcionando para não quebrar nada:
+          </p>
+          <pre className="bg-black p-4 rounded-lg text-green-400 text-xs overflow-x-auto border border-[#333]">
+{`-- 1. Cria a tabela antiga de estatísticas (se não existir)
+CREATE TABLE IF NOT EXISTS model_stats (
+  slug text primary key,
+  views int default 0,
+  clicks int default 0,
+  updated_at timestamptz default now()
+);
+
+-- 2. Habilita acesso público na tabela antiga
+ALTER TABLE model_stats ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "Permitir leitura anonima" ON model_stats FOR SELECT TO anon USING (true);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Permitir update anonimo" ON model_stats FOR UPDATE TO anon USING (true);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Permitir insert anonimo" ON model_stats FOR INSERT TO anon WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+-- 3. Função antiga para incrementar Views
+CREATE OR REPLACE FUNCTION increment_view(row_slug text)
+RETURNS void AS $$
+BEGIN
+  INSERT INTO model_stats (slug, views, clicks)
+  VALUES (row_slug, 1, 0)
+  ON CONFLICT (slug)
+  DO UPDATE SET views = model_stats.views + 1, updated_at = now();
+END;
+$$ LANGUAGE plpgsql;
+
+-- 4. Função antiga para incrementar Clicks
+CREATE OR REPLACE FUNCTION increment_click(row_slug text)
+RETURNS void AS $$
+BEGIN
+  INSERT INTO model_stats (slug, views, clicks)
+  VALUES (row_slug, 1, 1)
+  ON CONFLICT (slug)
+  DO UPDATE SET clicks = model_stats.clicks + 1, updated_at = now();
+END;
+$$ LANGUAGE plpgsql;
+
+-- 5. CRIA A NOVA TABELA PARA FILTRO DE TEMPO E IDIOMA
+CREATE TABLE IF NOT EXISTS analytics_events (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  model_id TEXT NOT NULL,
+  event_type TEXT NOT NULL, -- 'view' ou 'click'
+  language TEXT NOT NULL -- 'pt' ou 'default'
+);
+
+-- 6. Habilita acesso público na tabela nova
+ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "Permitir inserção anônima em analytics_events" ON analytics_events FOR INSERT TO anon WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Permitir leitura anônima em analytics_events" ON analytics_events FOR SELECT TO anon USING (true);
+EXCEPTION WHEN duplicate_object THEN null; END $$;`}
+          </pre>
+        </div>
       </div>
     </div>
   );
