@@ -14,8 +14,13 @@ export interface ModelConfig {
   url: string;
 }
 
+export interface ModelLinks {
+  pt: string;
+  default: string;
+}
+
 // Dictionary of available models
-export type ModelMap = Record<string, string>;
+export type ModelMap = Record<string, ModelLinks>;
 
 export interface StatData {
   views: number;
