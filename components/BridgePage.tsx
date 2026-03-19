@@ -25,7 +25,7 @@ const BridgePage: React.FC<BridgePageProps> = ({ modelId }) => {
   useEffect(() => {
     // Analytics: Registrar visualização
     if (modelId && modelConfig && !hasTrackedView.current) {
-      trackView(modelId);
+      trackView(modelId, lang);
       hasTrackedView.current = true;
     }
 
@@ -37,12 +37,12 @@ const BridgePage: React.FC<BridgePageProps> = ({ modelId }) => {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [modelId, modelConfig]);
+  }, [modelId, modelConfig, lang]);
 
   const handleAccess = () => {
     if (isAllowed && targetUrl && modelId) {
       // Analytics: Registrar clique
-      trackClick(modelId);
+      trackClick(modelId, lang);
       window.location.href = targetUrl;
     }
   };
