@@ -111,8 +111,11 @@ const AdminPanel: React.FC = () => {
                     <tr key={key} className="hover:bg-white/5 transition-colors">
                       <td className="p-4">
                         <span className="font-bold text-white capitalize">{key}</span>
+                        <div className="text-xs text-gray-500 mt-0.5 truncate max-w-[200px]" title={`PT: ${MODELS[key].pt}\nOutros: ${MODELS[key].default}`}>
+                          PT: {MODELS[key].pt}
+                        </div>
                         <div className="text-xs text-gray-500 mt-0.5 truncate max-w-[200px]">
-                          {MODELS[key]}
+                          Outros: {MODELS[key].default}
                         </div>
                       </td>
                       <td className="p-4 text-right font-mono text-gray-300">{data.views}</td>
