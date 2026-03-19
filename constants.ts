@@ -1,10 +1,16 @@
 import { ModelMap, Translations } from './types';
 
+// CONFIGURATION: Add your models here
+// The key (left side) is what you type in the URL (e.g., /mariana)
 export const MODELS: ModelMap = {
-  annaclara: "https://t.me/annaclaravipzinho_bot",
-  mariajulia: "https://t.me/+C8WKzYS79FpkMjVh"
+  anaaclara: {
+    pt: "https://t.me/annaclaravipzinho_bot",
+    default: "https://t.me/other_link_for_anaaclara" // Link para Inglês/Espanhol
+  }
 };
 
+// SLUG SECRETO DO ADMIN
+// Acesse usando: seudominio.com/#/paineladmin
 export const ADMIN_ROUTE = "/paineladmin";
 
 export const DEFAULT_GIF = "https://i.imgur.com/w55irUi.gif";
