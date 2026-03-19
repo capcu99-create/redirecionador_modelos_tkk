@@ -4,8 +4,12 @@ import { ModelMap, Translations } from './types';
 // The key (left side) is what you type in the URL (e.g., /mariana)
 export const MODELS: ModelMap = {
   anaaclara: {
-    pt: "https://t.me/annaclaravipzinho_bot",
-    default: "https://t.me/other_link_for_anaaclara" // Link para Inglês/Espanhol
+    pt: "https://t.me/+wc1osKXfY5ViM2Ex",
+    default: "https://t.me/+slZMWy-SB7I1MzBh" // Link para Inglês/Espanhol
+  },
+    mariajulia: {
+    pt: "https://t.me/+C8WKzYS79FpkMjVh",
+    default: "https://t.me/+C8WKzYS79FpkMjVh" // Link para Inglês/Espanhol
   }
 };
 
