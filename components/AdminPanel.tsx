@@ -2,6 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { fetchStatsFromDb } from '../utils/analytics';
 import { StatsMap, StatData } from '../types';
 import { MODELS } from '../constants';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
 
 type TimePeriod = 'all' | 'day' | 'week' | 'month';
 
@@ -50,6 +63,24 @@ const AdminPanel: React.FC = () => {
   const totalViews = Object.values(stats).reduce((acc, curr) => acc + curr.views, 0);
   const totalClicks = Object.values(stats).reduce((acc, curr) => acc + curr.clicks, 0);
   const totalCTR = calculateCTR(totalClicks, totalViews);
+
+  // Prepara dados para os gráficos
+  const chartData = Object.keys(MODELS).map(key => {
+    const data = getDisplayData(key);
+    return {
+      name: key.charAt(0).toUpperCase() + key.slice(1),
+      Visitas: data.views,
+      Cliques: data.clicks,
+    };
+  }).filter(item => item.Visitas > 0 || item.Cliques > 0);
+
+  const totalPtViews = Object.values(stats).reduce((acc, curr) => acc + (curr.pt_views || 0), 0);
+  const totalDefaultViews = Object.values(stats).reduce((acc, curr) => acc + (curr.default_views || 0), 0);
+  
+  const pieData = [
+    { name: 'Português', value: totalPtViews, color: '#4ade80' },
+    { name: 'Gringo', value: totalDefaultViews, color: '#3b82f6' }
+  ].filter(item => item.value > 0);
 
   return (
     <div className="min-h-screen bg-bg text-white p-6 font-sans">
@@ -100,23 +131,100 @@ const AdminPanel: React.FC = () => {
         </div>
 
         {/* Card de Resumo */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-card border border-borda-card p-5 rounded-xl text-center">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="bg-card border border-borda-card p-6 rounded-xl text-center shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-blue-500/50"></div>
             <h3 className="text-gray-400 text-xs font-bold uppercase mb-2">Total Visitas</h3>
-            <p className="text-3xl font-bold text-white">{totalViews}</p>
+            <p className="text-4xl font-bold text-white">{totalViews}</p>
           </div>
-          <div className="bg-card border border-borda-card p-5 rounded-xl text-center">
+          <div className="bg-card border border-borda-card p-6 rounded-xl text-center shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-roxo/50"></div>
             <h3 className="text-gray-400 text-xs font-bold uppercase mb-2">Total Telegram</h3>
-            <p className="text-3xl font-bold text-roxo">{totalClicks}</p>
+            <p className="text-4xl font-bold text-roxo">{totalClicks}</p>
           </div>
-          <div className="bg-card border border-borda-card p-5 rounded-xl text-center">
+          <div className="bg-card border border-borda-card p-6 rounded-xl text-center shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-green-500/50"></div>
             <h3 className="text-gray-400 text-xs font-bold uppercase mb-2">Conversão (CTR)</h3>
-            <p className="text-3xl font-bold text-green-400">{totalCTR}</p>
+            <p className="text-4xl font-bold text-green-400">{totalCTR}</p>
           </div>
         </div>
 
+        {/* Gráficos */}
+        {chartData.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            {/* Gráfico de Barras */}
+            <div className="bg-card border border-borda-card p-6 rounded-xl shadow-lg lg:col-span-2">
+              <h3 className="text-white font-bold mb-6 flex items-center gap-2">
+                📊 Visitas vs Cliques por Modelo
+              </h3>
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                    <XAxis dataKey="name" stroke="#888" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                    <YAxis stroke="#888" tick={{fill: '#888', fontSize: 12}} axisLine={false} tickLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#1a1a1a', borderColor: '#333', borderRadius: '8px', color: '#fff', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
+                      itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                      cursor={{fill: 'rgba(255,255,255,0.05)'}}
+                    />
+                    <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="circle" />
+                    <Bar dataKey="Visitas" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                    <Bar dataKey="Cliques" fill="#a855f7" radius={[4, 4, 0, 0]} maxBarSize={50} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Gráfico de Pizza (Público) */}
+            <div className="bg-card border border-borda-card p-6 rounded-xl shadow-lg">
+              <h3 className="text-white font-bold mb-6 flex items-center gap-2">
+                🌍 Distribuição de Público
+              </h3>
+              <div className="h-[300px] w-full flex items-center justify-center">
+                {pieData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                        stroke="none"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#1a1a1a', borderColor: '#333', borderRadius: '8px', color: '#fff', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)' }}
+                        itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                        formatter={(value: number) => [value, 'Visitas']}
+                      />
+                      <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-gray-500 text-sm flex flex-col items-center gap-2">
+                    <span className="text-2xl">🤷‍♂️</span>
+                    Sem dados de idioma suficientes
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tabela */}
         <div className="bg-card border border-borda-card rounded-xl overflow-hidden shadow-lg mb-8">
+          <div className="p-6 border-b border-borda-card bg-[#1a1a1a]">
+            <h3 className="text-white font-bold flex items-center gap-2">
+              📋 Detalhamento Completo
+            </h3>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -133,30 +241,30 @@ const AdminPanel: React.FC = () => {
                   return (
                     <tr key={key} className="hover:bg-white/5 transition-colors">
                       <td className="p-4">
-                        <span className="font-bold text-white capitalize">{key}</span>
-                        <div className="text-xs text-gray-500 mt-0.5 truncate max-w-[200px]" title={`PT: ${MODELS[key].pt}\nOutros: ${MODELS[key].default}`}>
-                          PT: {MODELS[key].pt}
+                        <span className="font-bold text-white capitalize text-lg">{key}</span>
+                        <div className="text-xs text-gray-500 mt-1 truncate max-w-[200px]" title={`PT: ${MODELS[key].pt}\nOutros: ${MODELS[key].default}`}>
+                          PT: <a href={MODELS[key].pt} target="_blank" rel="noreferrer" className="hover:text-roxo transition-colors">{MODELS[key].pt}</a>
                         </div>
                         <div className="text-xs text-gray-500 mt-0.5 truncate max-w-[200px]">
-                          Outros: {MODELS[key].default}
+                          Outros: <a href={MODELS[key].default} target="_blank" rel="noreferrer" className="hover:text-roxo transition-colors">{MODELS[key].default}</a>
                         </div>
                       </td>
                       <td className="p-4 text-right font-mono text-gray-300">
-                        <div className="font-bold text-white text-lg">{data.views}</div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          <span className="text-green-400" title="Português">{data.pt_views}</span> / <span className="text-blue-400" title="Gringo">{data.default_views}</span>
+                        <div className="font-bold text-white text-xl">{data.views}</div>
+                        <div className="text-xs text-gray-500 mt-1 bg-black/30 inline-block px-2 py-1 rounded">
+                          <span className="text-green-400 font-bold" title="Português">{data.pt_views}</span> <span className="text-gray-600">/</span> <span className="text-blue-400 font-bold" title="Gringo">{data.default_views}</span>
                         </div>
                       </td>
                       <td className="p-4 text-right font-mono text-roxo font-bold">
-                        <div className="text-lg">{data.clicks}</div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          <span className="text-green-400" title="Português">{data.pt_clicks}</span> / <span className="text-blue-400" title="Gringo">{data.default_clicks}</span>
+                        <div className="text-xl">{data.clicks}</div>
+                        <div className="text-xs text-gray-500 mt-1 bg-black/30 inline-block px-2 py-1 rounded">
+                          <span className="text-green-400 font-bold" title="Português">{data.pt_clicks}</span> <span className="text-gray-600">/</span> <span className="text-blue-400 font-bold" title="Gringo">{data.default_clicks}</span>
                         </div>
                       </td>
                       <td className="p-4 text-right font-mono text-green-400">
-                        <div className="text-lg">{calculateCTR(data.clicks, data.views)}</div>
-                        <div className="text-xs text-gray-500 mt-1">
-                          <span className="text-green-400" title="Português">{calculateCTR(data.pt_clicks, data.pt_views)}</span> / <span className="text-blue-400" title="Gringo">{calculateCTR(data.default_clicks, data.default_views)}</span>
+                        <div className="text-xl">{calculateCTR(data.clicks, data.views)}</div>
+                        <div className="text-xs text-gray-500 mt-1 bg-black/30 inline-block px-2 py-1 rounded">
+                          <span className="text-green-400 font-bold" title="Português">{calculateCTR(data.pt_clicks, data.pt_views)}</span> <span className="text-gray-600">/</span> <span className="text-blue-400 font-bold" title="Gringo">{calculateCTR(data.default_clicks, data.default_views)}</span>
                         </div>
                       </td>
                     </tr>
@@ -178,10 +286,55 @@ const AdminPanel: React.FC = () => {
           <h2 className="text-lg font-bold text-white mb-4">Instruções para o Supabase (MUITO IMPORTANTE)</h2>
           <p className="text-gray-400 mb-4 text-sm">
             Para que o filtro de tempo (hoje, semana, mês) e a separação por idioma funcionem, você precisa criar uma nova tabela no seu banco de dados Supabase. 
-            Acesse o <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="text-roxo underline">Dashboard do Supabase</a>, vá em <strong>SQL Editor</strong> e rode o seguinte comando:
+            Acesse o <a href="https://supabase.com/dashboard" target="_blank" rel="noreferrer" className="text-roxo underline">Dashboard do Supabase</a>, vá em <strong>SQL Editor</strong> e rode o seguinte comando. Ele vai criar a tabela nova e manter as funções antigas funcionando para não quebrar nada:
           </p>
           <pre className="bg-black p-4 rounded-lg text-green-400 text-xs overflow-x-auto border border-[#333]">
-{`-- Cria a tabela para registrar cada evento individualmente
+{`-- 1. Cria a tabela antiga de estatísticas (se não existir)
+CREATE TABLE IF NOT EXISTS model_stats (
+  slug text primary key,
+  views int default 0,
+  clicks int default 0,
+  updated_at timestamptz default now()
+);
+
+-- 2. Habilita acesso público na tabela antiga
+ALTER TABLE model_stats ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  CREATE POLICY "Permitir leitura anonima" ON model_stats FOR SELECT TO anon USING (true);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Permitir update anonimo" ON model_stats FOR UPDATE TO anon USING (true);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Permitir insert anonimo" ON model_stats FOR INSERT TO anon WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+-- 3. Função antiga para incrementar Views
+CREATE OR REPLACE FUNCTION increment_view(row_slug text)
+RETURNS void AS $$
+BEGIN
+  INSERT INTO model_stats (slug, views, clicks)
+  VALUES (row_slug, 1, 0)
+  ON CONFLICT (slug)
+  DO UPDATE SET views = model_stats.views + 1, updated_at = now();
+END;
+$$ LANGUAGE plpgsql;
+
+-- 4. Função antiga para incrementar Clicks
+CREATE OR REPLACE FUNCTION increment_click(row_slug text)
+RETURNS void AS $$
+BEGIN
+  INSERT INTO model_stats (slug, views, clicks)
+  VALUES (row_slug, 1, 1)
+  ON CONFLICT (slug)
+  DO UPDATE SET clicks = model_stats.clicks + 1, updated_at = now();
+END;
+$$ LANGUAGE plpgsql;
+
+-- 5. CRIA A NOVA TABELA PARA FILTRO DE TEMPO E IDIOMA
 CREATE TABLE IF NOT EXISTS analytics_events (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -190,18 +343,16 @@ CREATE TABLE IF NOT EXISTS analytics_events (
   language TEXT NOT NULL -- 'pt' ou 'default'
 );
 
--- Permite que qualquer pessoa insira dados (necessário para o frontend)
+-- 6. Habilita acesso público na tabela nova
 ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Permitir inserção anônima em analytics_events" 
-ON analytics_events FOR INSERT 
-TO anon 
-WITH CHECK (true);
+DO $$ BEGIN
+  CREATE POLICY "Permitir inserção anônima em analytics_events" ON analytics_events FOR INSERT TO anon WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
-CREATE POLICY "Permitir leitura anônima em analytics_events" 
-ON analytics_events FOR SELECT 
-TO anon 
-USING (true);`}
+DO $$ BEGIN
+  CREATE POLICY "Permitir leitura anônima em analytics_events" ON analytics_events FOR SELECT TO anon USING (true);
+EXCEPTION WHEN duplicate_object THEN null; END $$;`}
           </pre>
         </div>
       </div>
