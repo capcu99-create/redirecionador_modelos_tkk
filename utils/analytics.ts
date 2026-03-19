@@ -1,10 +1,37 @@
 import { supabase } from '../supabaseClient';
 import { StatsMap } from '../types';
 
-// Função para buscar estatísticas do banco
-export const fetchStatsFromDb = async (period: 'all' | 'day' | 'week' | 'month' = 'all'): Promise<StatsMap> => {
-  let query = supabase.from('analytics_events').select('model_id, event_type, language, created_at');
+type TimePeriod = 'all' | 'day' | 'week' | 'month';
 
+// Função para buscar estatísticas do banco
+export const fetchStatsFromDb = async (period: TimePeriod = 'all'): Promise<StatsMap> => {
+  // 1. Busca os dados agregados antigos (para compatibilidade)
+  const { data: oldData, error: oldError } = await supabase
+    .from('model_stats')
+    .select('slug, views, clicks');
+
+  if (oldError) {
+    console.error('Erro ao buscar stats antigos:', oldError);
+  }
+
+  const statsMap: StatsMap = {};
+  
+  if (oldData) {
+    oldData.forEach((row: any) => {
+      statsMap[row.slug] = {
+        views: row.views || 0,
+        clicks: row.clicks || 0,
+        pt_views: 0,
+        pt_clicks: 0,
+        default_views: 0,
+        default_clicks: 0
+      };
+    });
+  }
+
+  // 2. Busca os dados novos da tabela de eventos baseados no período
+  let query = supabase.from('analytics_events').select('*');
+  
   if (period !== 'all') {
     const now = new Date();
     let startDate = new Date();
@@ -14,45 +41,48 @@ export const fetchStatsFromDb = async (period: 'all' | 'day' | 'week' | 'month' 
     } else if (period === 'week') {
       startDate.setDate(now.getDate() - 7);
     } else if (period === 'month') {
-      startDate.setMonth(now.getMonth() - 1);
+      startDate.setDate(now.getDate() - 30);
     }
     
     query = query.gte('created_at', startDate.toISOString());
   }
 
-  const { data, error } = await query;
+  const { data: newEvents, error: newError } = await query;
 
-  if (error) {
-    console.error('Erro ao buscar stats:', error);
-    return {};
+  if (newError) {
+    console.error('Erro ao buscar novos eventos:', newError);
+    return statsMap; // Retorna o que conseguiu dos antigos
   }
 
-  const statsMap: StatsMap = {};
-  
-  if (data) {
-    data.forEach((row: any) => {
-      const slug = row.model_id;
+  // 3. Agrega os novos eventos
+  if (newEvents) {
+    // Se for um período específico, zeramos os antigos para mostrar apenas o período
+    if (period !== 'all') {
+      Object.keys(statsMap).forEach(key => {
+        statsMap[key] = {
+          views: 0, clicks: 0, pt_views: 0, pt_clicks: 0, default_views: 0, default_clicks: 0
+        };
+      });
+    }
+
+    newEvents.forEach((event: any) => {
+      const slug = event.model_id;
       if (!statsMap[slug]) {
         statsMap[slug] = {
-          views: 0,
-          clicks: 0,
-          pt_views: 0,
-          pt_clicks: 0,
-          default_views: 0,
-          default_clicks: 0
+          views: 0, clicks: 0, pt_views: 0, pt_clicks: 0, default_views: 0, default_clicks: 0
         };
       }
-      
-      const isPt = row.language === 'pt';
-      
-      if (row.event_type === 'view') {
-        statsMap[slug].views++;
-        if (isPt) statsMap[slug].pt_views++;
-        else statsMap[slug].default_views++;
-      } else if (row.event_type === 'click') {
-        statsMap[slug].clicks++;
-        if (isPt) statsMap[slug].pt_clicks++;
-        else statsMap[slug].default_clicks++;
+
+      const isPt = event.language === 'pt';
+
+      if (event.event_type === 'view') {
+        statsMap[slug].views += 1;
+        if (isPt) statsMap[slug].pt_views = (statsMap[slug].pt_views || 0) + 1;
+        else statsMap[slug].default_views = (statsMap[slug].default_views || 0) + 1;
+      } else if (event.event_type === 'click') {
+        statsMap[slug].clicks += 1;
+        if (isPt) statsMap[slug].pt_clicks = (statsMap[slug].pt_clicks || 0) + 1;
+        else statsMap[slug].default_clicks = (statsMap[slug].default_clicks || 0) + 1;
       }
     });
   }
@@ -61,33 +91,61 @@ export const fetchStatsFromDb = async (period: 'all' | 'day' | 'week' | 'month' 
 };
 
 // Registra uma visualização de página
-export const trackView = async (modelId: string, language: string) => {
+export const trackView = async (modelId: string, lang: string = 'default') => {
   const normalizedId = modelId.toLowerCase();
-  const langType = language === 'pt' ? 'pt' : 'default';
   
-  const { error } = await supabase.from('analytics_events').insert([
-    { model_id: normalizedId, event_type: 'view', language: langType }
+  // 1. Mantém a compatibilidade com a tabela antiga
+  const { error: oldError } = await supabase.rpc('increment_view', { 
+    row_slug: normalizedId 
+  });
+
+  if (oldError) {
+    console.error('Erro ao registrar view (antigo):', oldError);
+  }
+
+  // 2. Registra na nova tabela de eventos
+  const { error: newError } = await supabase.from('analytics_events').insert([
+    {
+      model_id: normalizedId,
+      event_type: 'view',
+      language: lang
+    }
   ]);
 
-  if (error) {
-    console.error('Erro ao registrar view:', error);
+  if (newError) {
+    console.error('Erro ao registrar view (novo):', newError);
   }
 };
 
 // Registra um clique
-export const trackClick = async (modelId: string, language: string) => {
+export const trackClick = async (modelId: string, lang: string = 'default') => {
   const normalizedId = modelId.toLowerCase();
-  const langType = language === 'pt' ? 'pt' : 'default';
 
-  const { error } = await supabase.from('analytics_events').insert([
-    { model_id: normalizedId, event_type: 'click', language: langType }
+  // 1. Mantém a compatibilidade com a tabela antiga
+  const { error: oldError } = await supabase.rpc('increment_click', { 
+    row_slug: normalizedId 
+  });
+
+  if (oldError) {
+    console.error('Erro ao registrar click (antigo):', oldError);
+  }
+
+  // 2. Registra na nova tabela de eventos
+  const { error: newError } = await supabase.from('analytics_events').insert([
+    {
+      model_id: normalizedId,
+      event_type: 'click',
+      language: lang
+    }
   ]);
 
-  if (error) {
-    console.error('Erro ao registrar click:', error);
+  if (newError) {
+    console.error('Erro ao registrar click (novo):', newError);
   }
 };
 
+// Reset agora precisa de permissão ou ser feito via tabela, 
+// por segurança vamos apenas logar, pois deletar dados do banco via front é perigoso sem auth
 export const resetStats = async () => {
   console.warn("Reset de estatísticas via frontend desabilitado por segurança com banco de dados.");
 };
