@@ -19,11 +19,12 @@ const BridgePage: React.FC<BridgePageProps> = ({ modelId }) => {
   const hasTrackedView = useRef(false);
 
   // If the modelId from URL doesn't exist in our config, verify it
-  const targetUrl = modelId ? MODELS[modelId.toLowerCase()] : null;
+  const modelConfig = modelId ? MODELS[modelId.toLowerCase()] : null;
+  const targetUrl = modelConfig ? (lang === 'pt' ? modelConfig.pt : modelConfig.default) : null;
 
   useEffect(() => {
     // Analytics: Registrar visualização
-    if (modelId && targetUrl && !hasTrackedView.current) {
+    if (modelId && modelConfig && !hasTrackedView.current) {
       trackView(modelId);
       hasTrackedView.current = true;
     }
@@ -36,7 +37,7 @@ const BridgePage: React.FC<BridgePageProps> = ({ modelId }) => {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [modelId, targetUrl]);
+  }, [modelId, modelConfig]);
 
   const handleAccess = () => {
     if (isAllowed && targetUrl && modelId) {
@@ -52,7 +53,7 @@ const BridgePage: React.FC<BridgePageProps> = ({ modelId }) => {
   };
 
   // If URL is invalid (e.g. /#/unknown), redirect to a safe fallback or show error
-  if (!targetUrl) {
+  if (!modelConfig) {
     return (
       <div className="min-h-screen flex items-center justify-center text-gray-500">
         <div className="text-center">
