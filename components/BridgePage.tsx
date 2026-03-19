@@ -23,12 +23,6 @@ const BridgePage: React.FC<BridgePageProps> = ({ modelId }) => {
   const targetUrl = modelConfig ? (lang === 'pt' ? modelConfig.pt : modelConfig.default) : null;
 
   useEffect(() => {
-    // Analytics: Registrar visualização
-    if (modelId && modelConfig && !hasTrackedView.current) {
-      trackView(modelId, lang);
-      hasTrackedView.current = true;
-    }
-
     // Simulate the 800ms delay from the original script
     const timer = setTimeout(() => {
       const allowed = checkEnvironment();
@@ -37,7 +31,7 @@ const BridgePage: React.FC<BridgePageProps> = ({ modelId }) => {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [modelId, modelConfig, lang]);
+  }, [modelId, modelConfig]);
 
   const handleAccess = () => {
     if (isAllowed && targetUrl && modelId) {
@@ -50,6 +44,12 @@ const BridgePage: React.FC<BridgePageProps> = ({ modelId }) => {
   const handleLanguageSelect = (selectedLang: LangCode) => {
     setLang(selectedLang);
     setShowLangModal(false);
+    
+    // Analytics: Registrar visualização apenas APÓS a escolha do idioma
+    if (modelId && modelConfig && !hasTrackedView.current) {
+      trackView(modelId, selectedLang);
+      hasTrackedView.current = true;
+    }
   };
 
   // If URL is invalid (e.g. /#/unknown), redirect to a safe fallback or show error
