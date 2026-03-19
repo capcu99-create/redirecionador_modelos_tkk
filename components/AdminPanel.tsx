@@ -60,8 +60,9 @@ const AdminPanel: React.FC = () => {
   };
 
   // Calcula totais
-  const totalViews = Object.values(stats).reduce((acc, curr) => acc + curr.views, 0);
-  const totalClicks = Object.values(stats).reduce((acc, curr) => acc + curr.clicks, 0);
+  const statsValues = Object.values(stats) as StatData[];
+  const totalViews = statsValues.reduce((acc, curr) => acc + curr.views, 0);
+  const totalClicks = statsValues.reduce((acc, curr) => acc + curr.clicks, 0);
   const totalCTR = calculateCTR(totalClicks, totalViews);
 
   // Prepara dados para os gráficos
@@ -74,8 +75,8 @@ const AdminPanel: React.FC = () => {
     };
   }).filter(item => item.Visitas > 0 || item.Cliques > 0);
 
-  const totalPtViews = Object.values(stats).reduce((acc, curr) => acc + (curr.pt_views || 0), 0);
-  const totalDefaultViews = Object.values(stats).reduce((acc, curr) => acc + (curr.default_views || 0), 0);
+  const totalPtViews = statsValues.reduce((acc, curr) => acc + (curr.pt_views || 0), 0);
+  const totalDefaultViews = statsValues.reduce((acc, curr) => acc + (curr.default_views || 0), 0);
   
   const pieData = [
     { name: 'Português', value: totalPtViews, color: '#4ade80' },
