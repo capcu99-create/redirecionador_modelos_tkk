@@ -11,7 +11,7 @@ export const MODELS: ModelMap = {
     pt: "https://t.me/+C8WKzYS79FpkMjVh",
     default: "https://t.me/+C8WKzYS79FpkMjVh" // Link para Inglês/Espanhol
   },
-    anaajulia: {
+    anajulia: {
     pt: "https://t.me/+Yq6M5dcRhpowMGUx",
     default: "https://t.me/+Yq6M5dcRhpowMGUx" // Link para Inglês/Espanhol
   },
