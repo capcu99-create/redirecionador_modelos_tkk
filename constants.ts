@@ -10,7 +10,11 @@ export const MODELS: ModelMap = {
     mariajulia: {
     pt: "https://t.me/+C8WKzYS79FpkMjVh",
     default: "https://t.me/+C8WKzYS79FpkMjVh" // Link para Inglês/Espanhol
-  }
+  },
+    anaaclara: {
+    pt: "https://t.me/+wc1osKXfY5ViM2Ex",
+    default: "https://t.me/+slZMWy-SB7I1MzBh" // Link para Inglês/Espanhol
+  },
 };
 
 // SLUG SECRETO DO ADMIN
