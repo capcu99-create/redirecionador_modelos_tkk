@@ -3,7 +3,7 @@ import { ModelMap, Translations } from './types';
 // CONFIGURATION: Add your models here
 // The key (left side) is what you type in the URL (e.g., /mariana)
 export const MODELS: ModelMap = {
-   annaclara: {
+    annaclara: {
     pt: "https://t.me/+wc1osKXfY5ViM2Ex",
     default: "https://t.me/+slZMWy-SB7I1MzBh" // Link para Inglês/Espanhol
   },
